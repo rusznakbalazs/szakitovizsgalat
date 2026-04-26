@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szakítóvizsgálat - Digitális Tudástár</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --primary: #b91c1c; 
+            --secondary: #1d4ed8; 
+            --accent: #d97706; 
+            --bg: #f8fafc;
+            --card-front: #ffffff;
+            --card-back: #fef2f2;
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            margin: 0; display: flex; height: 100vh; overflow: hidden;
+            background-color: var(--bg); color: #0f172a;
+        }
+
+        .sidebar {
+            width: 380px; background: white; border-right: 5px solid #e2e8f0;
+            padding: 25px 20px; overflow-y: auto; flex-shrink: 0;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.05); z-index: 10;
+        }
+
+        .sidebar h2 { font-family: 'Fredoka', sans-serif; color: var(--primary); text-align: center; font-size: 1.8rem; margin-bottom: 25px;}
+
+        .nav-item {
+            padding: 16px; margin-bottom: 12px; cursor: pointer; border-radius: 12px;
+            background: #f1f5f9; border: 2px solid transparent; transition: 0.2s;
+            font-weight: 700; color: #475569; font-size: 1.1rem;
+        }
+
+        .nav-item:hover { background: #fee2e2; color: var(--primary); transform: translateX(5px); }
+        .nav-item.active { background: var(--primary); color: white; border-color: #7f1d1d; }
+
+        .hud {
+            position: absolute; top: 20px; left: 420px;
+            background: white; padding: 12px 30px; border-radius: 50px;
+            display: flex; align-items: center; gap: 15px;
+            border: 3px solid var(--accent); z-index: 100;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .canvas {
+            flex-grow: 1; padding: 110px 40px 60px; overflow-y: auto;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 35px; width: 100%; max-width: 1400px;
+        }
+
+        .card { height: 550px; perspective: 1200px; cursor: pointer; }
+        .card-inner {
+            position: relative; width: 100%; height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .card.flipped .card-inner { transform: rotateY(180deg); }
+
+        .face {
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            border-radius: 20px; border: 4px solid white; box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            display: flex; flex-direction: column; padding: 25px; box-sizing: border-box;
+        }
+
+        .front { background: var(--card-front); justify-content: center; align-items: center; text-align: center; border-color: #fca5a5; }
+        .back { background: var(--card-back); transform: rotateY(180deg); overflow-y: auto; border-color: #f87171; }
+
+        .profile-img {
+            width: 100%; min-height: 160px; height: 160px;
+            background: white; border-radius: 10px; margin-bottom: 15px;
+            border: 1px solid #cbd5e1; padding: 10px; box-sizing: border-box;
+            display: flex; justify-content: center; align-items: center;
+        }
+        
+        .profile-img svg { width: 100%; height: 100%; }
+
+        .btn-speaker { 
+            background: var(--primary); color: white; border: none; padding: 12px; 
+            border-radius: 10px; margin-top: auto; cursor: pointer; font-family: 'Quicksand', sans-serif; 
+            font-weight: bold; font-size: 1rem; width: 100%; transition: 0.2s;
+        }
+        .btn-speaker:hover { background: #991b1b; }
+        .btn-speaker.playing { background: var(--accent); }
+
+        .btn-speaker-front {
+            background: #f1f5f9; color: var(--primary); border: 2px solid var(--primary);
+            padding: 10px 20px; border-radius: 10px; margin-top: 30px; cursor: pointer;
+            font-family: 'Quicksand', sans-serif; font-weight: bold; font-size: 0.95rem;
+            transition: 0.2s;
+        }
+        .btn-speaker-front:hover { background: var(--primary); color: white; }
+        .btn-speaker-front.playing { background: var(--accent); color: white; border-color: var(--accent); }
+
+        h3 { margin: 10px 0 10px 0; color: var(--primary); font-family: 'Fredoka', sans-serif; font-size: 1.5rem; }
+        p { line-height: 1.5; color: #1e293b; margin-bottom: 10px; font-size: 1.05rem; font-weight: 500;}
+        .tag { font-size: 0.85rem; font-weight: 900; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+
+        .math-container {
+            font-size: 1.1rem; color: var(--secondary); margin: 10px 0;
+            text-align: center; font-weight: bold; padding: 8px; background: #fff; border-radius: 8px;
+            border: 1px dashed #93c5fd;
+        }
+        
+        .simple-link {
+            color: var(--secondary); text-decoration: underline; font-weight: bold; word-break: break-all;
+        }
+        .simple-link:hover { color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>🔬 ANYAGVIZSGÁLAT</h2>
+    <div id="nav-list"></div>
+</div>
+
+<div class="hud">
+    <span style="font-size: 1.8rem;">💡</span>
+    <div>
+        <div style="font-weight: 800; color: var(--primary); font-size: 1.3rem;"><span id="xp">0</span> XP</div>
+        <div id="rank" style="font-size: 0.85rem; color: #64748b; font-weight: 800;">ÚJONC VIZSGÁLÓ</div>
+    </div>
+</div>
+
+<div class="canvas">
+    <div class="grid" id="card-grid"></div>
+</div>
+
+<script>
+    // --- TENGELYEK ÉS KÖZÖS GÖRBE ---
+    const baseCurve = "M 40 130 L 70 60 Q 120 30 180 30 Q 230 30 260 100";
+    const axes = `
+        <path d='M40 130 L280 130 M40 140 L40 20' stroke='black' stroke-width='2'/>
+        <text x='25' y='25' font-family='sans-serif' font-size='14' font-style='italic'>F</text>
+        <text x='270' y='145' font-family='sans-serif' font-size='14' font-style='italic'>Δl</text>
+    `;
+
+    // --- YOUTUBE IKON ---
+    const svgYoutube = `<svg viewBox="0 0 300 160"><rect x="100" y="40" width="100" height="70" rx="15" fill="#dc2626"/><polygon points="135,55 135,95 175,75" fill="white"/><text x="150" y="140" font-family="sans-serif" font-size="16" fill="#b91c1c" font-weight="bold" text-anchor="middle">Látványos Videó</text></svg>`;
+
+    // --- SZAKASZOK ---
+    const svgHooke = `<svg viewBox="0 0 300 160">${axes}
+        <path d="${baseCurve}" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+        <path d="M 40 130 L 70 60" fill="none" stroke="#1d4ed8" stroke-width="4"/>
+        <line x1="40" y1="145" x2="70" y2="145" stroke="#b91c1c" stroke-width="3" stroke-dasharray="4"/>
+        <text x="55" y="155" font-family="sans-serif" font-size="10" font-weight="bold" fill="#b91c1c" text-anchor="middle">I. Szakasz</text>
+    </svg>`;
+
+    const svgYieldCurve = `<svg viewBox="0 0 300 160">${axes}
+        <path d="${baseCurve}" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+        <path d="M 70 60 Q 120 30 180 30" fill="none" stroke="#1d4ed8" stroke-width="4"/>
+        <line x1="70" y1="145" x2="180" y2="145" stroke="#b91c1c" stroke-width="3" stroke-dasharray="4"/>
+        <text x="125" y="155" font-family="sans-serif" font-size="10" font-weight="bold" fill="#b91c1c" text-anchor="middle">II. Szakasz</text>
+    </svg>`;
+
+    const svgNecking = `<svg viewBox="0 0 300 160">${axes}
+        <path d="${baseCurve}" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+        <path d="M 180 30 Q 230 30 260 100" fill="none" stroke="#1d4ed8" stroke-width="4"/>
+        <line x1="180" y1="145" x2="260" y2="145" stroke="#b91c1c" stroke-width="3" stroke-dasharray="4"/>
+        <text x="220" y="155" font-family="sans-serif" font-size="10" font-weight="bold" fill="#b91c1c" text-anchor="middle">III. Szakasz</text>
+    </svg>`;
+
+    const svgYieldPoint = `<svg viewBox="0 0 300 160">${axes}
+        <path d="${baseCurve}" fill="none" stroke="#1d4ed8" stroke-width="3"/>
+        <circle cx="70" cy="60" r="5" fill="#b91c1c"/>
+        <line x1="40" y1="60" x2="70" y2="60" stroke="#b91c1c" stroke-dasharray="3" stroke-width="1.5"/>
+        <text x="95" y="55" font-family="sans-serif" font-size="12" font-weight="bold" fill="#b91c1c">Rp0.2</text>
+    </svg>`;
+
+    const svgRm = `<svg viewBox="0 0 300 160">${axes}
+        <path d="${baseCurve}" fill="none" stroke="#1d4ed8" stroke-width="3"/>
+        <circle cx="180" cy="30" r="6" fill="#b91c1c"/>
+        <text x="180" y="20" font-family="sans-serif" font-size="14" font-weight="bold" fill="#b91c1c" text-anchor="middle">Rm</text>
+    </svg>`;
+
+    const svgLuders = `<svg viewBox="0 0 300 160">${axes}
+        <path d="M 40 130 L 70 50 L 78 70 L 86 55 L 94 70 L 102 60 Q 140 30 180 30 Q 230 30 260 100" fill="none" stroke="#1d4ed8" stroke-width="3"/>
+        <text x="150" y="25" font-family="sans-serif" font-size="14" fill="#b91c1c" font-weight="bold">Felső/Alsó folyáshatár</text>
+    </svg>`;
+
+    const svgArea = `<svg viewBox="0 0 300 160">
+        <path d="${baseCurve} L 260 130 Z" fill="#bfdbfe"/>
+        ${axes}
+        <path d="${baseCurve}" fill="none" stroke="#1d4ed8" stroke-width="3"/>
+        <text x="150" y="90" font-family="sans-serif" font-size="18" fill="#1e3a8a" font-weight="bold" text-anchor="middle">W_c</text>
+    </svg>`;
+
+    const svgDogbone = `<svg viewBox="0 0 300 160">
+        <path d="M 40 60 h 60 c 15 0 20 15 35 15 h 30 c 15 0 20 -15 35 -15 h 60 v 40 h -60 c -15 0 -20 -15 -35 -15 h -30 c -15 0 -20 15 -35 15 h -60 z" fill="#e2e8f0" stroke="#334155" stroke-width="2"/>
+        <path d="M 135 105 L 165 105 M 135 100 v 10 M 165 100 v 10" stroke="#b91c1c" stroke-width="2"/>
+        <text x="150" y="98" font-size="14" font-weight="bold" fill="#b91c1c" text-anchor="middle">L₀</text>
+    </svg>`;
+
+    const svgElongation = `<svg viewBox="0 0 300 160">
+        <rect x="50" y="40" width="100" height="20" fill="#cbd5e1" stroke="#334155" stroke-width="1.5"/>
+        <rect x="50" y="90" width="180" height="20" fill="#94a3b8" stroke="#334155" stroke-width="1.5"/>
+        <line x1="160" y1="80" x2="230" y2="80" stroke="#b91c1c" stroke-width="2"/>
+        <text x="195" y="70" font-size="12" fill="#b91c1c" text-anchor="middle" font-family="sans-serif" font-weight="bold">Nyúlás</text>
+    </svg>`;
+    
+    // --- ÚJ MÉRÉS FOLYAMATA GRAFIKA ---
+    const svgMeasurement = `<svg viewBox="0 0 300 160">
+        <path d="M 60 60 h 40 c 15 0 20 15 35 15 h 30 c 15 0 20 -15 35 -15 h 40 v 40 h -40 c -15 0 -20 -15 -35 -15 h -30 c -15 0 -20 15 -35 15 h -40 z" fill="#e2e8f0" stroke="#334155" stroke-width="2"/>
+        <path d="M 50 80 L 20 80 M 30 70 L 20 80 L 30 90" fill="none" stroke="#b91c1c" stroke-width="3"/>
+        <path d="M 250 80 L 280 80 M 270 70 L 280 80 L 270 90" fill="none" stroke="#b91c1c" stroke-width="3"/>
+        <text x="35" y="60" font-family="sans-serif" font-weight="bold" font-size="14" fill="#b91c1c">F</text>
+        <text x="265" y="60" font-family="sans-serif" font-weight="bold" font-size="14" fill="#b91c1c">F</text>
+    </svg>`;
+
+    const svgBridge = `<svg viewBox="0 0 300 160"><path d="M 30 140 Q 150 30 270 140" fill="none" stroke="#1d4ed8" stroke-width="5"/><rect x="20" y="140" width="260" height="8" fill="#475569"/><line x1="70" y1="140" x2="70" y2="85" stroke="#94a3b8" stroke-width="3"/><line x1="110" y1="140" x2="110" y2="60" stroke="#94a3b8" stroke-width="3"/><line x1="150" y1="140" x2="150" y2="50" stroke="#94a3b8" stroke-width="3"/><line x1="190" y1="140" x2="190" y2="60" stroke="#94a3b8" stroke-width="3"/><line x1="230" y1="140" x2="230" y2="85" stroke="#94a3b8" stroke-width="3"/></svg>`;
+    const svgLeonardo = `<svg viewBox="0 0 300 160"><line x1="150" y1="20" x2="150" y2="80" stroke="#d97706" stroke-width="3"/><circle cx="150" cy="20" r="6" fill="#64748b"/><rect x="120" y="80" width="60" height="40" fill="#b45309"/><text x="150" y="105" fill="white" font-size="14" text-anchor="middle">Homok</text></svg>`;
+    const svgGrip = `<svg viewBox="0 0 300 160"><rect x="135" y="30" width="30" height="100" fill="#e2e8f0" stroke="#334155" stroke-width="2"/><rect x="95" y="30" width="40" height="40" fill="#64748b"/><rect x="165" y="30" width="40" height="40" fill="#64748b"/><rect x="95" y="90" width="40" height="40" fill="#64748b"/><rect x="165" y="90" width="40" height="40" fill="#64748b"/></svg>`;
+    const svgMachine = `<svg viewBox="0 0 300 160"><rect x="80" y="20" width="20" height="110" fill="#94a3b8"/><rect x="200" y="20" width="20" height="110" fill="#94a3b8"/><rect x="60" y="20" width="180" height="20" fill="#334155"/><rect x="60" y="60" width="180" height="20" fill="#1d4ed8"/><rect x="140" y="80" width="20" height="30" fill="#e2e8f0"/><text x="150" y="145" text-anchor="middle" font-family="sans-serif" font-weight="bold">Szakítógép</text></svg>`;
+    const svgContraction = `<svg viewBox="0 0 300 160"><circle cx="100" cy="80" r="40" fill="#cbd5e1" stroke="#334155" stroke-width="2"/><circle cx="200" cy="80" r="20" fill="#94a3b8" stroke="#334155" stroke-width="2"/><path d="M 150 80 l 20 0 l -6 -6 M 170 80 l -6 6" fill="none" stroke="#b91c1c" stroke-width="3"/><text x="160" y="65" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="16" fill="#b91c1c">S₀ ➔ Sᵤ</text></svg>`;
+
+    const dataset = [
+        {
+            group: "1. Bevezetés és Alapok",
+            items: [
+                { 
+                    t: "Ráhangolódás (Videó)", 
+                    d: "Mielőtt belekezdenénk a tananyagba, nézd meg ezt a rövid videót! Jól látható, ahogy a húzóerő hatására a próbatest egyenletesen megnyúlik, majd a közepén elfűződik, végül elszakad.<br><br>Ha az iskolai hálózatod engedi, kattints az alábbi linkre <b>a görgőddel (vagy Ctrl + bal klikkel)</b>:<br><br><a href='https://www.youtube.com/shorts/YwVyFTxOcw0' target='_blank' rel='noopener noreferrer' class='simple-link'>Szakítóvizsgálat Videó (YouTube)</a>",
+                    tts: "Mielőtt belekezdenénk a tananyagba, nézd meg a leírásban található rövid videót! Jól látható, ahogy a húzóerő hatására a próbatest egyenletesen megnyúlik, majd a közepén elfűződik, végül elszakad. A kártyán található linkre kattintva a görgőddel új lapon nyithatod meg a videót.",
+                    svg: svgYoutube
+                },
+                { 
+                    t: "A Vizsgálat Célja", 
+                    d: "A szakítóvizsgálat célja a szerkezeti anyagok terhelhetőségének, alakváltozó képességének és szívósságának meghatározása. Ezek az adatok szolgálnak alapjául a későbbi mérnöki méretezésnek.",
+                    tts: "A szakítóvizsgálat célja a szerkezeti anyagok terhelhetőségének, alakváltozó képességének és szívósságának meghatározása. Ezek az adatok szolgálnak alapjául a későbbi mérnöki méretezésnek.",
+                    svg: svgBridge
+                },
+                { 
+                    t: "Történelmi Kezdetek", 
+                    d: "Az első szakítókísérleteket Leonardo Da Vinci végezte körülbelül 1495-ben. Egy kötélre erősített kosárba addig engedte a homokot, amíg a kötél el nem szakadt.",
+                    tts: "Az első szakítókísérleteket Leonardo Da Vinci végezte körülbelül ezer négyszáz kilencvenötben. Egy kötélre erősített kosárba addig engedte a homokot, amíg a kötél el nem szakadt.",
+                    svg: svgLeonardo
+                },
+                { 
+                    t: "A Mérés Folyamata", 
+                    d: "A mérés lényege: egy szabványos próbatestet fokozatosan húzunk, miközben folyamatosan mérjük az ébredő erőt az alakváltozás (megnyúlás) függvényében.",
+                    tts: "A mérés lényege, hogy egy szabványos próbatestet fokozatosan húzunk, miközben folyamatosan mérjük az ébredő erőt az alakváltozás, vagyis a megnyúlás függvényében.",
+                    svg: svgMeasurement
+                }
+            ]
+        },
+        {
+            group: "2. Eszközök és Gépek",
+            items: [
+                { 
+                    t: "A Próbatestek", 
+                    d: "A kiinduló jeltávolság és az átmérő között fix kapcsolat van. Rövid próbatestnél ez az arány azt jelenti, hogy a jeltávolság ($L_0$) egyenlő az eredeti átmérő ($d_0$) ötszörösével.",
+                    math: "L_0 = 5 \\cdot d_0",
+                    tts: "A kiinduló jeltávolság és az átmérő között fix kapcsolat van. Rövid próbatestnél ez az arány azt jelenti, hogy a jeltávolság, vagyis el nulla, egyenlő az eredeti átmérő, vagyis dé nulla ötszörösével.",
+                    svg: svgDogbone
+                },
+                { 
+                    t: "Befogási Típusok", 
+                    d: "A próbatest befogása lehet mechanikus, menetes, beakasztós vagy csapos. Ennek célja az egyenletes erőbevezetés biztosítása a gépből a próbatestbe.",
+                    tts: "A próbatest befogása lehet mechanikus, menetes, beakasztós vagy csapos. Ennek célja az egyenletes erőbevezetés biztosítása a gépből a próbatestbe.",
+                    svg: svgGrip
+                },
+                { 
+                    t: "A Szakítógépek", 
+                    d: "A mozgást létrehozhatja mechanikus orsó vagy hidraulikus munkahenger. Az aktuális erőt erőmérő cella, a nyúlást pedig finomnyúlásmérő, más néven extenzométer méri.",
+                    tts: "A mozgást létrehozhatja mechanikus orsó vagy hidraulikus munkahenger. Az aktuális erőt erőmérő cella, a nyúlást pedig finomnyúlásmérő, más néven extenzométer méri.",
+                    svg: svgMachine
+                }
+            ]
+        },
+        {
+            group: "3. A Szakítódiagram",
+            items: [
+                { 
+                    t: "I. Rugalmas Szakasz", 
+                    d: "A terhelés megszűnése után a darab visszanyeri eredeti alakját. A Hooke-törvény szerint az anyag merevségét adó rugalmassági tényező ($E$) a feszültség ($\\sigma$) és a fajlagos megnyúlás ($\\epsilon$) hányadosa.",
+                    math: "\\frac{\\sigma}{\\epsilon} = E",
+                    tts: "A terhelés megszűnése után a darab visszanyeri eredeti alakját. A Hooke-törvény szerint az anyag merevségét adó rugalmassági tényező, azaz nagy E, a feszültség, vagyis szigma, és a fajlagos megnyúlás, vagyis epszilon hányadosa.",
+                    svg: svgHooke
+                },
+                { 
+                    t: "II. Egyenletes Nyúlás", 
+                    d: "A próbatest már képlékeny deformációt szenved. Ez a maradó alakváltozás a mérőhossz minden pontján azonos mértékű. Az anyag megfordíthatatlanul elfolyik.",
+                    tts: "A próbatest már képlékeny deformációt szenved. Ez a maradó alakváltozás a mérőhossz minden pontján azonos mértékű. Az anyag megfordíthatatlanul elfolyik.",
+                    svg: svgYieldCurve
+                },
+                { 
+                    t: "III. Kontrakció", 
+                    d: "A képlékeny deformáció egy szűk tartományra korlátozódik. A rúd hirtelen elvékonyodik. A szakadás ebben a legkisebb keresztmetszetben fog bekövetkezni, a görbe a maximumról lefelé ível.",
+                    tts: "A képlékeny deformáció egy szűk tartományra korlátozódik. A rúd hirtelen elvékonyodik. A szakadás ebben a legkisebb keresztmetszetben fog bekövetkezni, a görbe a maximumról lefelé ível.",
+                    svg: svgNecking
+                }
+            ]
+        },
+        {
+            group: "4. Feszültségi Mérőszámok",
+            items: [
+                { 
+                    t: "Folyáshatár (Rp0.2)", 
+                    d: "Ez a mérnökök legfontosabb biztonsági határa. A folyáshatár ($R_{p0.2}$) egyenlő a 0,2%-os maradó nyúlást okozó erő ($F_{p0.2}$) és a kiinduló keresztmetszet ($S_0$) arányával.",
+                    math: "R_{p0.2} = \\frac{F_{p0.2}}{S_0}",
+                    tts: "Ez a mérnökök legfontosabb biztonsági határa. A folyáshatár, azaz er pé nulla egész két tized, egyenlő a nulla egész két tized százalékos maradó nyúlást okozó erő, vagyis ef pé nulla egész két tized, és a kiinduló keresztmetszet, vagyis es nulla arányával.",
+                    svg: svgYieldPoint
+                },
+                { 
+                    t: "Felső és Alsó Folyáshatár", 
+                    d: "Egyes anyagoknál, például lágyacélnál a görbén egy fűrészfogas rész látható a képlékeny szakasz elején. Ennek felső csúcsa a felső folyáshatár, az alsó völgye az alsó folyáshatár.",
+                    tts: "Egyes anyagoknál, például lágyacélnál a görbén egy fűrészfogas rész látható a képlékeny szakasz elején. Ennek felső csúcsa a felső folyáshatár, az alsó völgye az alsó folyáshatár.",
+                    svg: svgLuders
+                },
+                { 
+                    t: "Szakítószilárdság (Rm)", 
+                    d: "Az abszolút legnagyobb terhelés. A szakítószilárdság ($R_m$) egyenlő a maximális húzóerő ($F_m$) és az eredeti keresztmetszet ($S_0$) hányadosával.",
+                    math: "R_m = \\frac{F_m}{S_0}",
+                    tts: "Az abszolút legnagyobb terhelés. A szakítószilárdság, azaz er em, egyenlő a maximális húzóerő, vagyis ef em, és az eredeti keresztmetszet, vagyis es nulla hányadosával.",
+                    svg: svgRm
+                }
+            ]
+        },
+        {
+            group: "5. Alakváltozás és Munka",
+            items: [
+                { 
+                    t: "Szakadási Nyúlás", 
+                    d: "A szívósság mérőszáma. A szakadási nyúlás ($A$) a hossznövekedés (törés utáni hossz mínusz eredeti hossz) és a kiinduló hossz arányát adja meg százalékban.",
+                    math: "A = \\frac{L_u - L_0}{L_0} \\cdot 100 \\%",
+                    tts: "A szívósság mérőszáma. A szakadási nyúlás, azaz nagy a, a hossznövekedés, vagyis a törés utáni el u hossz mínusz az eredeti el nulla hossz, és a kiinduló el nulla hossz arányát adja meg százalékban.",
+                    svg: svgElongation
+                },
+                { 
+                    t: "Kontrakció", 
+                    d: "A keresztmetszet-csökkenés és az eredeti keresztmetszet arányát fejezi ki százalékban. Kiszámításához az eredeti keresztmetszetből ($S_0$) kivonjuk a törés utánit ($S_u$), majd elosztjuk az eredetivel.",
+                    math: "Z = \\frac{S_0 - S_u}{S_0} \\cdot 100 \\%",
+                    tts: "A keresztmetszet csökkenés és az eredeti keresztmetszet arányát fejezi ki százalékban. Kiszámításához az eredeti keresztmetszetből, azaz es nullából kivonjuk a törés utánit, vagyis es u-t, majd elosztjuk az eredeti es nullával.",
+                    svg: svgContraction
+                },
+                { 
+                    t: "Fajlagos Törésmunka", 
+                    d: "A görbe alatti terület, amely az elszakításhoz szükséges teljes energiát mutatja. A törésmunka ($W_c$) közelítőleg az átlagos feszültség és a valódi alakváltozás szorzatával számítható.",
+                    math: "W_c \\cong \\frac{R_{p0.2} + \\sigma_u}{2} \\cdot \\varphi_u",
+                    tts: "A görbe alatti terület, amely az elszakításhoz szükséges teljes energiát mutatja. A törésmunka, azaz dupla vé cé, közelítőleg az átlagos feszültség és a valódi alakváltozás szorzatával számítható.",
+                    svg: svgArea
+                }
+            ]
+        }
+    ];
+
+    let xp = 0;
+    const seen = new Set();
+    let currentUtterance = null;
+
+    function init() {
+        const navList = document.getElementById('nav-list');
+        dataset.forEach((group, index) => {
+            const div = document.createElement('div');
+            div.className = 'nav-item' + (index === 0 ? ' active' : '');
+            div.innerText = group.group;
+            div.addEventListener('click', () => render(index, div));
+            navList.appendChild(div);
+        });
+        render(0, document.querySelector('.nav-item'));
+    }
+
+    function render(index, el) {
+        window.speechSynthesis.cancel(); 
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        el.classList.add('active');
+        
+        const grid = document.getElementById('card-grid');
+        grid.innerHTML = '';
+        
+        dataset[index].items.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            const mathHtml = item.math ? `<div class='math-container'>$$ ${item.math} $$</div>` : '';
+
+            card.innerHTML = `
+                <div class="card-inner">
+                    <div class="face front">
+                        <span class="tag">Kattints a kártyára a forgatáshoz!</span>
+                        <h3>${item.t}</h3>
+                        <span style="font-size: 4rem; opacity: 0.9;">🔄</span>
+                        <button class="btn-speaker-front">🔊 Cím felolvasása</button>
+                    </div>
+                    <div class="face back">
+                        <div class="profile-img">${item.svg}</div>
+                        <p>${item.d}</p>
+                        ${mathHtml}
+                        <button class="btn-speaker">🔊 Részletes magyarázat</button>
+                    </div>
+                </div>
+            `;
+            
+            const inner = card.querySelector('.card-inner');
+            const btnBack = card.querySelector('.btn-speaker');
+            const btnFront = card.querySelector('.btn-speaker-front');
+
+            inner.addEventListener('click', function(e) {
+                if(e.target === btnBack || e.target === btnFront || e.target.tagName.toLowerCase() === 'a') return; 
+                
+                card.classList.toggle('flipped');
+                window.speechSynthesis.cancel(); 
+                
+                document.querySelectorAll('.btn-speaker, .btn-speaker-front').forEach(b => b.classList.remove('playing'));
+
+                if (card.classList.contains('flipped')) {
+                    if (!seen.has(item.t)) {
+                        seen.add(item.t);
+                        xp += 50;
+                        document.getElementById('xp').innerText = xp;
+                        updateRank();
+                    }
+                }
+            });
+
+            btnFront.addEventListener('click', function(e) {
+                e.stopPropagation(); 
+                
+                if (window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                    document.querySelectorAll('.btn-speaker-front').forEach(b => b.classList.remove('playing'));
+                } else {
+                    document.querySelectorAll('.btn-speaker-front, .btn-speaker').forEach(b => b.classList.remove('playing'));
+                    btnFront.classList.add('playing');
+                    
+                    currentUtterance = new SpeechSynthesisUtterance(item.t);
+                    currentUtterance.lang = 'hu-HU';
+                    currentUtterance.rate = 0.90; 
+                    
+                    currentUtterance.onend = function() {
+                        btnFront.classList.remove('playing');
+                    };
+                    
+                    window.speechSynthesis.speak(currentUtterance);
+                }
+            });
+
+            btnBack.addEventListener('click', function(e) {
+                e.stopPropagation(); 
+                
+                if (window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                    document.querySelectorAll('.btn-speaker').forEach(b => b.classList.remove('playing'));
+                } else {
+                    document.querySelectorAll('.btn-speaker-front, .btn-speaker').forEach(b => b.classList.remove('playing'));
+                    btnBack.classList.add('playing');
+                    
+                    currentUtterance = new SpeechSynthesisUtterance(item.tts);
+                    currentUtterance.lang = 'hu-HU';
+                    currentUtterance.rate = 0.90; 
+                    
+                    currentUtterance.onend = function() {
+                        btnBack.classList.remove('playing');
+                    };
+                    
+                    window.speechSynthesis.speak(currentUtterance);
+                }
+            });
+
+            grid.appendChild(card);
+        });
+
+        setTimeout(() => {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise().catch(err => console.log(err));
+            }
+        }, 100);
+    }
+
+    function updateRank() {
+        const ranks = ["ÚJONC VIZSGÁLÓ", "LABORÁNS SEGÉD", "SZAKÍTÓ MESTER", "ANYAGMÉRNÖK", "FŐMÉRNÖK"];
+        const idx = Math.min(Math.floor(xp / 150), ranks.length - 1);
+        document.getElementById('rank').innerText = ranks[idx];
+    }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>M
